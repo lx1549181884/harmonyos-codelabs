@@ -15,39 +15,27 @@
 
 package com.huawei.codelab.slice;
 
-import static ohos.agp.components.ComponentContainer.LayoutConfig.MATCH_PARENT;
-import static ohos.security.SystemPermission.DISTRIBUTED_DATASYNC;
-
 import com.huawei.codelab.MainAbility;
 import com.huawei.codelab.ResourceTable;
-import com.huawei.codelab.bean.MyPoint;
+import com.huawei.codelab.bean.GameInfo;
 import com.huawei.codelab.component.DeviceSelectDialog;
 import com.huawei.codelab.component.DrawPoint;
+import com.huawei.codelab.util.GameUtil;
 import com.huawei.codelab.util.GsonUtil;
 import com.huawei.codelab.util.LogUtils;
-
 import ohos.aafwk.ability.AbilitySlice;
 import ohos.aafwk.content.Intent;
 import ohos.aafwk.content.Operation;
-import ohos.agp.components.Button;
-import ohos.agp.components.Component;
-import ohos.agp.components.DependentLayout;
-import ohos.agp.components.Image;
-import ohos.agp.components.Text;
+import ohos.agp.components.*;
 import ohos.bundle.IBundleManager;
-import ohos.data.distributed.common.ChangeNotification;
-import ohos.data.distributed.common.Entry;
-import ohos.data.distributed.common.KvManager;
-import ohos.data.distributed.common.KvManagerConfig;
-import ohos.data.distributed.common.KvManagerFactory;
-import ohos.data.distributed.common.KvStoreObserver;
-import ohos.data.distributed.common.KvStoreType;
-import ohos.data.distributed.common.Options;
-import ohos.data.distributed.common.SubscribeType;
-import ohos.data.distributed.common.SyncMode;
+import ohos.data.distributed.common.*;
 import ohos.data.distributed.user.SingleKvStore;
+import ohos.multimodalinput.event.TouchEvent;
 
 import java.util.List;
+
+import static ohos.agp.components.ComponentContainer.LayoutConfig.MATCH_PARENT;
+import static ohos.security.SystemPermission.DISTRIBUTED_DATASYNC;
 
 /**
  * MainAbilitySlice
@@ -59,36 +47,62 @@ public class MainAbilitySlice extends AbilitySlice {
     private static final int PERMISSION_CODE = 20201203;
     private static final int DELAY_TIME = 10;
     private static final String STORE_ID_KEY = "storeId";
-    private static final String POINTS_KEY = "points";
     private static final String COLOR_INDEX_KEY = "colorIndex";
     private static final String IS_FORM_LOCAL_KEY = "isFormLocal";
+    private static final String GAME_INFO_STATE = "gameInfoState";
+    private static final String GAME_INFO_RED_BOARD_X = "gameInfoRedBoardX";
+    private static final String GAME_INFO_BLUE_BOARD_X = "gameInfoBlueBoardX";
+    private static final String GAME_INFO_BALL = "gameInfoBall";
     private static String storeId;
     private DependentLayout canvas;
     private Image transform;
     private KvManager kvManager;
     private SingleKvStore singleKvStore;
     private Text title;
+    private Button btn;
     private DrawPoint drawl;
-    private Button back;
+    private boolean isLocal;
+    private GameUtil.Interface gameUtilInterface;
 
     @Override
     public void onStart(Intent intent) {
         super.onStart(intent);
         super.setUIContent(ResourceTable.Layout_ability_main);
         storeId = STORE_ID_KEY + System.currentTimeMillis();
+        isLocal = !intent.getBooleanParam(IS_FORM_LOCAL_KEY, false);
         findComponentById();
         requestPermission();
         initView(intent);
         initDatabase();
-        initDraw(intent);
+        initDraw();
+        gameUtilInterface = new GameUtil.Interface() {
+            @Override
+            public GameInfo getGameInfo() {
+                return MainAbilitySlice.this.getGameInfo();
+            }
+
+            @Override
+            public void saveBall(GameInfo.Ball ball) {
+                MainAbilitySlice.this.saveBall(ball);
+            }
+
+            @Override
+            public void saveBoard(boolean isRedOrBlue, float x) {
+                MainAbilitySlice.this.saveBoard(isRedOrBlue, x);
+            }
+
+            @Override
+            public void saveState(int state) {
+                MainAbilitySlice.this.saveState(state);
+            }
+        };
+        GameUtil.init(gameUtilInterface);
     }
 
     private void initView(Intent intent) {
-        boolean isLocal = !intent.getBooleanParam(IS_FORM_LOCAL_KEY, false);
         if (!isLocal) {
             storeId = intent.getStringParam(STORE_ID_KEY);
         }
-
         title.setText(isLocal ? "本地端" : "远程端");
         transform.setVisibility(isLocal ? Component.VISIBLE : Component.INVISIBLE);
     }
@@ -111,8 +125,14 @@ public class MainAbilitySlice extends AbilitySlice {
         if (findComponentById(ResourceTable.Id_title) instanceof Text) {
             title = (Text) findComponentById(ResourceTable.Id_title);
         }
-        if (findComponentById(ResourceTable.Id_back) instanceof Button) {
-            back = (Button) findComponentById(ResourceTable.Id_back);
+        if (findComponentById(ResourceTable.Id_btn) instanceof Button) {
+            btn = (Button) findComponentById(ResourceTable.Id_btn);
+            if (isLocal) {
+                btn.setClickedListener(component -> {
+                    initGameInfo();
+                    GameUtil.start();
+                });
+            }
         }
         transform.setClickedListener(component -> {
             DeviceSelectDialog dialog = new DeviceSelectDialog(MainAbilitySlice.this);
@@ -129,58 +149,83 @@ public class MainAbilitySlice extends AbilitySlice {
         });
     }
 
-    /**
-     * Initialize art boards
-     *
-     * @param intent Intent
-     */
-    private void initDraw(Intent intent) {
-        int colorIndex = intent.getIntParam(COLOR_INDEX_KEY, 0);
-        drawl = new DrawPoint(this, colorIndex);
-        drawl.setWidth(MATCH_PARENT);
+    private void initDraw() {
+        drawl = new DrawPoint(this);
+        drawl.setHeight(MATCH_PARENT);
         drawl.setWidth(MATCH_PARENT);
         canvas.addComponent(drawl);
 
-        drawPoints();
+        if (isLocal) {
+            initGameInfo();
+        } else {
+            drawPoints();
+        }
 
-        drawl.setOnDrawBack(points -> {
-            if (points != null && points.size() > 1) {
-                String pointsString = GsonUtil.objectToString(points);
-                LogUtils.info(TAG, "pointsString::" + pointsString);
-                if (singleKvStore != null) {
-                    singleKvStore.putString(POINTS_KEY, pointsString);
+        drawl.setTouchEventListener(new Component.TouchEventListener() {
+            int lastX = 0;
+
+            @Override
+            public boolean onTouchEvent(Component component, TouchEvent touchEvent) {
+                int currentX = (int) touchEvent.getPointerPosition(touchEvent.getIndex()).getX();
+                LogUtils.info(TAG, "onTouchEvent action=" + touchEvent.getAction() + " lastX=" + lastX + " currentX=" + currentX);
+                switch (touchEvent.getAction()) {
+                    case TouchEvent.PRIMARY_POINT_DOWN:
+                        lastX = currentX;
+                        break;
+                    case TouchEvent.POINT_MOVE:
+                    case TouchEvent.PRIMARY_POINT_UP:
+                        int diffX = currentX - lastX;
+                        lastX = currentX;
+                        GameUtil.moveBoard(isLocal, diffX);
+                        break;
                 }
-            }
-        });
-        back.setClickedListener(component -> {
-            List<MyPoint> points = drawl.getPoints();
-            if (points == null || points.size() <= 1) {
-                return;
-            }
-            points.remove(points.size() - 1);
-            for (int i = points.size() - 1; i >= 0; i--) {
-                if (points.get(i).isLastPoint()) {
-                    break;
-                }
-                points.remove(i);
-            }
-            drawl.setDrawParams(points);
-            String pointsString = GsonUtil.objectToString(points);
-            if (singleKvStore != null) {
-                singleKvStore.putString(POINTS_KEY, pointsString);
+                return true;
             }
         });
     }
 
-    // 获取数据库中的点数据，并在画布上画出来
+    // 获取数据库中的数据，并在画布上画出来
     private void drawPoints() {
-        List<Entry> points = singleKvStore.getEntries(POINTS_KEY);
-        for (Entry entry : points) {
-            if (entry.getKey().equals(POINTS_KEY)) {
-                List<MyPoint> remotePoints = GsonUtil.jsonToList(singleKvStore.getString(POINTS_KEY), MyPoint.class);
-                getUITaskDispatcher().delayDispatch(() -> drawl.setDrawParams(remotePoints), DELAY_TIME);
+        getUITaskDispatcher().delayDispatch(() -> {
+            GameInfo gameInfo = getGameInfo();
+            drawl.setDrawParams(gameInfo);
+            if (isLocal) {
+                switch (gameInfo.state) {
+                    case 0:
+                        btn.setText("点击开始");
+                        btn.setVisibility(Component.VISIBLE);
+                        break;
+                    case 2:
+                        btn.setText("红方胜，点击重新开始");
+                        btn.setVisibility(Component.VISIBLE);
+                        break;
+                    case 3:
+                        btn.setText("蓝方胜，点击重新开始");
+                        btn.setVisibility(Component.VISIBLE);
+                        break;
+                    case 1:
+                    default:
+                        btn.setText("");
+                        btn.setVisibility(Component.HIDE);
+                        break;
+                }
+            } else {
+                switch (gameInfo.state) {
+                    case 2:
+                        btn.setText("红方胜");
+                        btn.setVisibility(Component.VISIBLE);
+                        break;
+                    case 3:
+                        btn.setText("蓝方胜");
+                        btn.setVisibility(Component.VISIBLE);
+                        break;
+                    default:
+                        btn.setText("");
+                        btn.setVisibility(Component.HIDE);
+                        break;
+                }
             }
-        }
+        }, DELAY_TIME);
     }
 
     /**
@@ -237,5 +282,35 @@ public class MainAbilitySlice extends AbilitySlice {
     protected void onStop() {
         super.onStop();
         kvManager.closeKvStore(singleKvStore);
+    }
+
+    private GameInfo getGameInfo() {
+        GameInfo gameInfo = new GameInfo();
+        gameInfo.state = singleKvStore.getInt(GAME_INFO_STATE);
+        gameInfo.redBoardX = singleKvStore.getFloat(GAME_INFO_RED_BOARD_X);
+        gameInfo.blueBoardX = singleKvStore.getFloat(GAME_INFO_BLUE_BOARD_X);
+        gameInfo.ball = GsonUtil.jsonToBean(singleKvStore.getString(GAME_INFO_BALL), GameInfo.Ball.class);
+        return gameInfo;
+    }
+
+    private void initGameInfo() {
+        GameInfo gameInfo = new GameInfo();
+        saveState(gameInfo.state);
+        saveBoard(true, gameInfo.redBoardX);
+        saveBoard(false, gameInfo.blueBoardX);
+        saveBall(gameInfo.ball);
+    }
+
+    // 0准备开始，1开始，2红方胜，3蓝方胜
+    private void saveState(int state) {
+        singleKvStore.putInt(GAME_INFO_STATE, state);
+    }
+
+    private void saveBoard(boolean isRedOrBlue, float x) {
+        singleKvStore.putFloat(isRedOrBlue ? GAME_INFO_RED_BOARD_X : GAME_INFO_BLUE_BOARD_X, x);
+    }
+
+    private void saveBall(GameInfo.Ball ball) {
+        singleKvStore.putString(GAME_INFO_BALL, GsonUtil.objectToString(ball));
     }
 }

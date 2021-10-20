@@ -23,8 +23,11 @@ import ohos.aafwk.ability.AbilityPackage;
  * @since 2021-04-06
  */
 public class MyApplication extends AbilityPackage {
+    public static MyApplication context;
+
     @Override
     public void onInitialize() {
         super.onInitialize();
+        context = this;
     }
 }

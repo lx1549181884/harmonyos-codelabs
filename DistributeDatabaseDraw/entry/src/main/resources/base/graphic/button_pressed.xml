@@ -15,5 +15,5 @@
  -->
 <shape xmlns:ohos="http://schemas.huawei.com/res/ohos" ohos:shape="rectangle">
     <corners ohos:radius="20" />
-    <solid ohos:color="#F08080"/>
+    <solid ohos:color="#aaaaaa"/>
 </shape>

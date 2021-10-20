@@ -33,9 +33,11 @@ import ohos.app.Context;
 public class DrawPoint extends Component implements Component.DrawTask {
     private GameInfo gameInfo;
     private Paint paint;
+    private boolean isLocal;
 
-    public DrawPoint(Context context) {
+    public DrawPoint(Context context, boolean isLocal) {
         super(context);
+        this.isLocal = isLocal;
         init();
     }
 
@@ -56,7 +58,11 @@ public class DrawPoint extends Component implements Component.DrawTask {
             return;
         }
         LogUtils.info(getClass().getSimpleName(), "onDraw " + GsonUtil.objectToString(gameInfo));
-        int windowHeight = GameUtil.getWindowHeight();
+        float windowWidth = GameUtil.getWindowWidth();
+        float windowHeight = GameUtil.getWindowHeight();
+        if (!isLocal) {
+            canvas.rotate(180, windowWidth / 2, windowHeight / 2);
+        }
         canvas.drawRect(gameInfo.redBoardX,
                 windowHeight - GameUtil.BOARD_MARGIN - GameUtil.BOARD_HEIGHT,
                 gameInfo.redBoardX + GameUtil.BOARD_WIDTH,
@@ -72,5 +78,6 @@ public class DrawPoint extends Component implements Component.DrawTask {
                 Color.BLUE
         );
         canvas.drawCircle(gameInfo.ball.x, gameInfo.ball.y, GameUtil.BALL_RADIUS, paint, Color.GREEN);
+
     }
 }

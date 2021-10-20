@@ -150,7 +150,7 @@ public class MainAbilitySlice extends AbilitySlice {
     }
 
     private void initDraw() {
-        drawl = new DrawPoint(this);
+        drawl = new DrawPoint(this, isLocal);
         drawl.setHeight(MATCH_PARENT);
         drawl.setWidth(MATCH_PARENT);
         canvas.addComponent(drawl);
@@ -176,7 +176,7 @@ public class MainAbilitySlice extends AbilitySlice {
                     case TouchEvent.PRIMARY_POINT_UP:
                         int diffX = currentX - lastX;
                         lastX = currentX;
-                        GameUtil.moveBoard(isLocal, diffX);
+                        GameUtil.moveBoard(isLocal, isLocal ? diffX : -diffX);
                         break;
                 }
                 return true;

@@ -9,7 +9,7 @@ import java.util.TimerTask;
 
 public class GameUtil {
     public static final float BALL_RADIUS = 30;
-    public static final float BALL_SPEED_INIT = 500;
+    public static final float BALL_SPEED_INIT = 400;
     public static final float BOARD_WIDTH = 220;
     public static final float BOARD_HEIGHT = 25;
     public static final float BOARD_MARGIN = 300;
@@ -34,7 +34,7 @@ public class GameUtil {
             return;
         }
         GameInfo gameInfo = i.getGameInfo();
-        int windowWidth = getWindowWidth();
+        float windowWidth = getWindowWidth();
         float oldValue = redOrBlue ? gameInfo.redBoardX : gameInfo.blueBoardX;
         float newValue = oldValue + moveX;
         if (newValue <= 0) {
@@ -66,7 +66,7 @@ public class GameUtil {
             public void run() {
                 GameInfo gameInfo = i.getGameInfo();
 
-                int windowWidth = getWindowWidth();
+                float windowWidth = getWindowWidth();
                 gameInfo.ball.x = gameInfo.ball.x + gameInfo.ball.speedX * TIMER_PERIOD / 1000;
                 if (gameInfo.ball.x > windowWidth - BALL_RADIUS) {
                     gameInfo.ball.x = windowWidth - BALL_RADIUS;
@@ -76,7 +76,7 @@ public class GameUtil {
                     gameInfo.ball.speedX = -gameInfo.ball.speedX;
                 }
 
-                int windowHeight = getWindowHeight();
+                float windowHeight = getWindowHeight();
                 gameInfo.ball.y = gameInfo.ball.y + gameInfo.ball.speedY * TIMER_PERIOD / 1000;
                 if (gameInfo.ball.y > windowHeight - BOARD_MARGIN - BOARD_HEIGHT - BALL_RADIUS
                         && gameInfo.ball.y < windowHeight - BOARD_MARGIN - BOARD_HEIGHT
@@ -116,13 +116,13 @@ public class GameUtil {
     }
 
     // 获取屏幕的宽度
-    public static int getWindowWidth() {
-        return getDeviceCapability().width * getDeviceCapability().screenDensity / 160;
+    public static float getWindowWidth() {
+        return getDeviceCapability().width * getDeviceCapability().screenDensity / 160f;
     }
 
     // 获取屏幕的高度
-    public static int getWindowHeight() {
-        return getDeviceCapability().height * getDeviceCapability().screenDensity / 160;
+    public static float getWindowHeight() {
+        return getDeviceCapability().height * getDeviceCapability().screenDensity / 160f;
     }
 
     private static DeviceCapability getDeviceCapability() {

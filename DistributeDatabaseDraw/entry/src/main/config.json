@@ -41,11 +41,15 @@
             ]
           }
         ],
+        "name": "com.huawei.codelab.SplashAbility",
+        "type": "page",
+        "launchType": "standard",
+        "icon": "$media:icon",
+        "label": "$string:app_name"
+      },
+      {
         "orientation": "unspecified",
         "name": "com.huawei.codelab.MainAbility",
-        "icon": "$media:icon",
-        "description": "$string:mainability_description",
-        "label": "$string:app_name",
         "type": "page",
         "launchType": "standard"
       }

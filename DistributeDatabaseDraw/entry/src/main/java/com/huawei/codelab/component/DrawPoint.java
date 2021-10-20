@@ -68,16 +68,15 @@ public class DrawPoint extends Component implements Component.DrawTask {
                 gameInfo.redBoardX + GameUtil.BOARD_WIDTH,
                 windowHeight - GameUtil.BOARD_MARGIN,
                 paint,
-                Color.RED
+                new Color(Color.getIntColor("#cb3636"))
         );
         canvas.drawRect(gameInfo.blueBoardX,
                 GameUtil.BOARD_MARGIN,
                 gameInfo.blueBoardX + GameUtil.BOARD_WIDTH,
                 GameUtil.BOARD_MARGIN + GameUtil.BOARD_HEIGHT,
                 paint,
-                Color.BLUE
+                new Color(Color.getIntColor("#0068b7"))
         );
-        canvas.drawCircle(gameInfo.ball.x, gameInfo.ball.y, GameUtil.BALL_RADIUS, paint, Color.GREEN);
-
+        canvas.drawCircle(gameInfo.ball.x, gameInfo.ball.y, GameUtil.BALL_RADIUS, paint, new Color(Color.getIntColor("#ffcb57")));
     }
 }

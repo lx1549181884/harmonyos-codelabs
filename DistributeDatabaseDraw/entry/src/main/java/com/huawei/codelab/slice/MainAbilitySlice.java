@@ -162,21 +162,20 @@ public class MainAbilitySlice extends AbilitySlice {
         }
 
         drawl.setTouchEventListener(new Component.TouchEventListener() {
-            int lastX = 0;
+            int lastX = 0; // 上一次触碰的坐标
 
             @Override
             public boolean onTouchEvent(Component component, TouchEvent touchEvent) {
-                int currentX = (int) touchEvent.getPointerPosition(touchEvent.getIndex()).getX();
-                LogUtils.info(TAG, "onTouchEvent action=" + touchEvent.getAction() + " lastX=" + lastX + " currentX=" + currentX);
+                int currentX = (int) touchEvent.getPointerPosition(touchEvent.getIndex()).getX(); // 当前触碰的坐标
                 switch (touchEvent.getAction()) {
-                    case TouchEvent.PRIMARY_POINT_DOWN:
-                        lastX = currentX;
+                    case TouchEvent.PRIMARY_POINT_DOWN: // 按下
+                        lastX = currentX; // 保存按下坐标，供后面移动使用
                         break;
-                    case TouchEvent.POINT_MOVE:
-                    case TouchEvent.PRIMARY_POINT_UP:
-                        int diffX = currentX - lastX;
-                        lastX = currentX;
-                        GameUtil.moveBoard(isLocal, isLocal ? diffX : -diffX);
+                    case TouchEvent.POINT_MOVE: // 移动
+                    case TouchEvent.PRIMARY_POINT_UP: // 抬起
+                        int diffX = currentX - lastX; // 计算移动的距离
+                        lastX = currentX; // 保存当前坐标，供下一次使用
+                        GameUtil.moveBoard(isLocal, isLocal ? diffX : -diffX); // 移动小球diffX距离，并同步数据给其他端。远端因为是镜像视角的原因，移动距离相反
                         break;
                 }
                 return true;

@@ -68,39 +68,39 @@ public class GameUtil {
 
                 float windowWidth = getWindowWidth();
                 gameInfo.ball.x = gameInfo.ball.x + gameInfo.ball.speedX * TIMER_PERIOD / 1000;
-                if (gameInfo.ball.x > windowWidth - BALL_RADIUS) {
-                    gameInfo.ball.x = windowWidth - BALL_RADIUS;
-                    gameInfo.ball.speedX = -gameInfo.ball.speedX;
-                } else if (gameInfo.ball.x < BALL_RADIUS) {
-                    gameInfo.ball.x = BALL_RADIUS;
-                    gameInfo.ball.speedX = -gameInfo.ball.speedX;
+                if (gameInfo.ball.x > windowWidth - BALL_RADIUS) { // 若小球超出屏幕右边
+                    gameInfo.ball.x = windowWidth - BALL_RADIUS; // 矫正坐标
+                    gameInfo.ball.speedX = -gameInfo.ball.speedX; // 改变速度方向
+                } else if (gameInfo.ball.x < BALL_RADIUS) { // 若小球超出屏幕左边
+                    gameInfo.ball.x = BALL_RADIUS; // 矫正坐标
+                    gameInfo.ball.speedX = -gameInfo.ball.speedX; // 改变速度方向
                 }
 
                 float windowHeight = getWindowHeight();
                 gameInfo.ball.y = gameInfo.ball.y + gameInfo.ball.speedY * TIMER_PERIOD / 1000;
-                if (gameInfo.ball.y > windowHeight - BOARD_MARGIN - BOARD_HEIGHT - BALL_RADIUS
+                if (gameInfo.ball.y > windowHeight - BOARD_MARGIN - BOARD_HEIGHT - BALL_RADIUS // 若小球碰到红色板
                         && gameInfo.ball.y < windowHeight - BOARD_MARGIN - BOARD_HEIGHT
                         && gameInfo.ball.x > gameInfo.redBoardX
                         && gameInfo.ball.x < gameInfo.redBoardX + BOARD_WIDTH
                 ) {
-                    gameInfo.ball.y = windowHeight - BOARD_MARGIN - BOARD_HEIGHT - BALL_RADIUS;
-                    gameInfo.ball.speedY = -gameInfo.ball.speedY;
-                } else if (gameInfo.ball.y < BOARD_MARGIN + BOARD_HEIGHT + BALL_RADIUS
+                    gameInfo.ball.y = windowHeight - BOARD_MARGIN - BOARD_HEIGHT - BALL_RADIUS; // 矫正坐标
+                    gameInfo.ball.speedY = -gameInfo.ball.speedY; // 改变速度方向
+                } else if (gameInfo.ball.y < BOARD_MARGIN + BOARD_HEIGHT + BALL_RADIUS // 若小球碰到蓝色板
                         && gameInfo.ball.y > BOARD_MARGIN + BOARD_HEIGHT
                         && gameInfo.ball.x > gameInfo.blueBoardX
                         && gameInfo.ball.x < gameInfo.blueBoardX + BOARD_WIDTH) {
-                    gameInfo.ball.y = BOARD_MARGIN + BOARD_HEIGHT + BALL_RADIUS;
-                    gameInfo.ball.speedY = -gameInfo.ball.speedY;
+                    gameInfo.ball.y = BOARD_MARGIN + BOARD_HEIGHT + BALL_RADIUS; // 矫正坐标
+                    gameInfo.ball.speedY = -gameInfo.ball.speedY; // 改变速度方向
                 }
 
-                i.saveBall(gameInfo.ball);
+                i.saveBall(gameInfo.ball); // 同步小球数据给其他端
 
-                if (gameInfo.ball.y < 0) {
-                    stopTimer();
-                    i.saveState(2);
-                } else if (gameInfo.ball.y > windowHeight) {
-                    stopTimer();
-                    i.saveState(3);
+                if (gameInfo.ball.y < 0) { // 若小球碰到屏幕顶端
+                    stopTimer(); // 停止Timer
+                    i.saveState(2); // 同步游戏状态2，代表红方胜
+                } else if (gameInfo.ball.y > windowHeight) { // 若小球碰到屏幕底端
+                    stopTimer(); // 停止Timer
+                    i.saveState(3); // 同步游戏状态3，代表蓝方胜
                 }
             }
         };

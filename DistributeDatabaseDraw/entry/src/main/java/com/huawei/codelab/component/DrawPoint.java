@@ -17,8 +17,6 @@ package com.huawei.codelab.component;
 
 import com.huawei.codelab.bean.GameInfo;
 import com.huawei.codelab.util.GameUtil;
-import com.huawei.codelab.util.GsonUtil;
-import com.huawei.codelab.util.LogUtils;
 import ohos.agp.components.Component;
 import ohos.agp.render.Canvas;
 import ohos.agp.render.Paint;
@@ -57,12 +55,13 @@ public class DrawPoint extends Component implements Component.DrawTask {
         if (gameInfo == null) {
             return;
         }
-        LogUtils.info(getClass().getSimpleName(), "onDraw " + GsonUtil.objectToString(gameInfo));
         float windowWidth = GameUtil.getWindowWidth();
         float windowHeight = GameUtil.getWindowHeight();
+        // 如果是远端，以屏幕中心为圆心，旋转180度
         if (!isLocal) {
             canvas.rotate(180, windowWidth / 2, windowHeight / 2);
         }
+        // 画红色板子
         canvas.drawRect(gameInfo.redBoardX,
                 windowHeight - GameUtil.BOARD_MARGIN - GameUtil.BOARD_HEIGHT,
                 gameInfo.redBoardX + GameUtil.BOARD_WIDTH,
@@ -70,6 +69,7 @@ public class DrawPoint extends Component implements Component.DrawTask {
                 paint,
                 new Color(Color.getIntColor("#cb3636"))
         );
+        // 画蓝色板子
         canvas.drawRect(gameInfo.blueBoardX,
                 GameUtil.BOARD_MARGIN,
                 gameInfo.blueBoardX + GameUtil.BOARD_WIDTH,
@@ -77,6 +77,7 @@ public class DrawPoint extends Component implements Component.DrawTask {
                 paint,
                 new Color(Color.getIntColor("#0068b7"))
         );
+        // 画球
         canvas.drawCircle(gameInfo.ball.x, gameInfo.ball.y, GameUtil.BALL_RADIUS, paint, new Color(Color.getIntColor("#ffcb57")));
     }
 }
